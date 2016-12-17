@@ -3,22 +3,47 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:wpfTestDg="clr-namespace:WpfDataGridDispatchTest"
         Title="MainWindow" Height="350" Width="525">
-    
+
     <Window.Resources>
-        <wpfTestDg:ColumnTestVm x:Key="ViewModel"/>
+        <wpfTestDg:DataTemplateTestVm x:Key="ViewModel"/>
     </Window.Resources>
-    
+
     <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition/>
-            <RowDefinition/>
-        </Grid.RowDefinitions>
-        <DataGrid Grid.Row="0" wpfTestDg:DataGridAtt.BindableColumns="{Binding Columns, Source={StaticResource ViewModel}}" AutoGenerateColumns="False"/>
-        
-        <UniformGrid Grid.Row="1" Rows="1">
-            <Button Content="Should Fail" Click="AddDataGridColsAddedInWorkerThread"/>
-            <Button Content="Should Succeed" Click="AddDataGridColsAddedInUiThread"/>
-        </UniformGrid>
-        
+
+        <ItemsControl Background="Transparent" ItemsSource="{Binding Source={StaticResource ViewModel}, Path=Items}">
+            <ItemsControl.Resources>
+                <DataTemplate x:Key="FullViewTemplate">
+                    <Border BorderBrush="Red" BorderThickness="3">
+                        <TextBlock Text="{Binding Text}"/>
+                    </Border>
+                </DataTemplate>
+                <DataTemplate x:Key="CompactViewTemplate">
+                    <Border BorderBrush="SteelBlue" BorderThickness="1">
+                        <TextBlock Text="{Binding Text}"/>
+                    </Border>
+                </DataTemplate>
+            </ItemsControl.Resources>
+
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <ContentControl Content="{Binding}">
+                        <ContentControl.Style>
+                            <Style TargetType="{x:Type ContentControl}">
+                                <Setter Property="ContentTemplate" Value="{StaticResource FullViewTemplate}"/>
+                                <Style.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Trigger.Setters>
+                                            <Setter Property="ContentTemplate" Value="{StaticResource CompactViewTemplate}"/>
+                                        </Trigger.Setters>
+                                    </Trigger>                                    
+                                </Style.Triggers>
+                            </Style>
+                        </ContentControl.Style>
+                    </ContentControl>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+
     </Grid>
 </Window>
