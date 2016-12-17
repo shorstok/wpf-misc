@@ -32,12 +32,14 @@ namespace WpfDataGridDispatchTest
         }
 
         private async void AddDataGridColsAddedInWorkerThread(object sender, RoutedEventArgs e)
-        {         
+        {
+            //creating cols in non-UI thread
+
             await Task.Delay(1).ConfigureAwait(false);    //detaching to thread pool thread
 
             ViewModel.Columns = new ObservableCollection<DataGridColumn>(); //initializing colleciton in thread pool, but this gets marshalled by WPF
 
-            Dispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle);  //wait for dispatched PropertyChanged to take effect
+            Dispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle);  //wait for dispatched PropertyChanged to take effect, so newly added columns would be handled by CollectionChanged
 
             //creating cols in thread pool thread
             var cols = new List<DataGridColumn>
@@ -65,7 +67,7 @@ namespace WpfDataGridDispatchTest
 
             ViewModel.Columns = new ObservableCollection<DataGridColumn>(); //initializing colleciton in thread pool
 
-            Dispatcher.Invoke(() => { },DispatcherPriority.ApplicationIdle);  //wait for dispatched PropertyChanged to take effect
+            Dispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle);  //wait for dispatched PropertyChanged to take effect, so newly added columns would be handled by CollectionChanged
 
             //adding previously created columns - should succeed
             foreach (var dataGridColumn in cols)

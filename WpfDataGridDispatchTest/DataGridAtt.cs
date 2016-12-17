@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -14,46 +15,55 @@ using System.Threading.Tasks;
 
 namespace WpfDataGridDispatchTest
 {
-    public class DataGridAtt
+    public static class DataGridAtt
     {
         public static readonly DependencyProperty BindableColumnsProperty = DependencyProperty.RegisterAttached(
             "BindableColumns", typeof (ObservableCollection<DataGridColumn>), typeof (DataGridAtt),
             new UIPropertyMetadata(null, BindableColumnsPropertyChanged));
-
-        private static readonly ConcurrentDictionary<ObservableCollection<DataGridColumn>, NotifyCollectionChangedEventHandler> BoundCollections =
-            new ConcurrentDictionary<ObservableCollection<DataGridColumn>, NotifyCollectionChangedEventHandler>();
-
+        
         private static void BindableColumnsPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs ne)
         {
             var newValue = (ObservableCollection<DataGridColumn>) ne.NewValue;
             var oldValue =  ne.OldValue as ObservableCollection<DataGridColumn>;
 
-            NotifyCollectionChangedEventHandler handlerWithCapturedContext = (sender, e) => { cols_CollectionChanged(d as DataGrid, e); };
+            var grid = d as DataGrid;
 
-            NotifyCollectionChangedEventHandler oldHandler;
+            if(null == grid)
+                return;
 
-            if (null != oldValue && BoundCollections.TryGetValue(oldValue,out oldHandler))
-            {
-                oldValue.CollectionChanged -= oldHandler;
-            }
+            if (null != oldValue)
+                oldValue.CollectionChanged -= grid.CollectionChanged;
 
             if (newValue != null)
             {
-                newValue.CollectionChanged += handlerWithCapturedContext;
-                BoundCollections.TryAdd(newValue, handlerWithCapturedContext);
+                InitGridColumns(grid, newValue);
+                newValue.CollectionChanged += grid.CollectionChanged;
             }
         }
 
-        static void cols_CollectionChanged(DataGrid sender, NotifyCollectionChangedEventArgs ne)
+        private static void InitGridColumns(DataGrid grid, ObservableCollection<DataGridColumn> newValue)
+        {
+            grid.Columns.Clear();
+
+            foreach (var dataGridColumn in newValue)
+                grid.Columns.Add(dataGridColumn);
+        }
+
+        public static void SetBindableColumns(DependencyObject element, ObservableCollection<DataGridColumn> value)
+        {
+            element.SetValue(BindableColumnsProperty, value);
+        }
+
+        private static void CollectionChanged(this DataGrid grid, object sender, NotifyCollectionChangedEventArgs ne)
         {
             if (ne.Action == NotifyCollectionChangedAction.Add)
             {
                 foreach (DataGridColumn column in ne.NewItems)
                 {
                     var colLocalCopy = column;
-                    sender.Dispatcher.BeginInvoke(new Action(delegate
+                    grid.Dispatcher.BeginInvoke(new Action(delegate
                     {
-                        sender.Columns.Add(colLocalCopy);
+                        grid.Columns.Add(colLocalCopy);
                     }), DispatcherPriority.Normal);
                 }
             }
@@ -62,18 +72,13 @@ namespace WpfDataGridDispatchTest
                 foreach (DataGridColumn column in ne.OldItems)
                 {
                     var colLocalCopy = column;
-                    sender.Dispatcher.BeginInvoke(new Action(delegate
+                    grid.Dispatcher.BeginInvoke(new Action(delegate
                     {
-                        sender.Columns.Remove(colLocalCopy);
+                        grid.Columns.Remove(colLocalCopy);
                     }), DispatcherPriority.Normal);
-                    
+
                 }
             }
-        }
-
-        public static void SetBindableColumns(DependencyObject element, ObservableCollection<DataGridColumn> value)
-        {
-            element.SetValue(BindableColumnsProperty, value);
         }
 
         public static ObservableCollection<DataGridColumn> GetBindableColumns(DependencyObject element)
