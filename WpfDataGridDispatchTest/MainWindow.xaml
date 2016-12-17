@@ -1,0 +1,24 @@
+﻿<Window x:Class="WpfDataGridDispatchTest.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:wpfTestDg="clr-namespace:WpfDataGridDispatchTest"
+        Title="MainWindow" Height="350" Width="525">
+    
+    <Window.Resources>
+        <wpfTestDg:ColumnTestVm x:Key="ViewModel"/>
+    </Window.Resources>
+    
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition/>
+            <RowDefinition/>
+        </Grid.RowDefinitions>
+        <DataGrid Grid.Row="0" wpfTestDg:DataGridAtt.BindableColumns="{Binding Columns, Source={StaticResource ViewModel}}" AutoGenerateColumns="False"/>
+        
+        <UniformGrid Grid.Row="1" Rows="1">
+            <Button Content="Should Fail" Click="AddDataGridColsAddedInWorkerThread"/>
+            <Button Content="Should Succeed" Click="AddDataGridColsAddedInUiThread"/>
+        </UniformGrid>
+        
+    </Grid>
+</Window>
